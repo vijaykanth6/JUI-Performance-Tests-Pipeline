@@ -1,0 +1,34 @@
+#!groovy
+
+properties([
+        pipelineTriggers([cron('00 21 * * *')]),
+        parameters([
+                string(name: 'ENVIRONMENT', defaultValue: 'aat', description: 'Environment to test'),
+                string(name: 'URL_TO_TEST', defaultValue: 'https://jui-webapp-aat.service.core-compute-aat.internal/', description: 'The URL you want to run these tests against'),
+                string(name: 'IDAM_URL', defaultValue: 'https://preprod-idamapi.reform.hmcts.net:3511', description: 'The IDAM API Url to create and delete users from'),
+                string(name: 'IDAM_WEB_URL', defaultValue: 'https://idam.preprod.ccidam.reform.hmcts.net', description: 'The IDAM Loging Url')
+                string(name: 'process.env.TEST_EMAIL', defaultValue: 'process.env.TEST_EMAIL', description: 'JUI USERNAME')
+                string(name: 'process.env.TEST_PASSWORD', defaultValue: 'process.env.TEST_PASSWORD', description: 'JUI PASSWORD')
+        ])
+])
+
+
+@Library("Infrastructure") _
+
+def product = "jui"
+def component = "judge"
+
+withNightlyPipeline("java", product, component) {
+    env.TEST_URL = params.URL_TO_TEST
+    env.IDAM_URL = params.IDAM_URL
+    env.IDAM_WEB_URL = params.IDAM_WEB_URL
+    env.process.env.TEST_EMAIL = params.JUIUprocess.env.TEST_EMAIL
+    env.process.env.TEST_PASSWORD = params.process.env.TEST_PASSWORD
+
+    enablePerformanceTest()
+
+    after('performanceTest') {
+        steps.archiveArtifacts allowEmptyArchive: true, artifacts: 'functional-output/**/*'
+    }
+
+}
